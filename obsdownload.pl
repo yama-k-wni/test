@@ -6,20 +6,34 @@ use Time::Local;
 my $BASEDIR = "/Users/yamauekazuhiro/tmp";
 our $tblfile="/Users/yamauekazuhiro/tmp/amedas.tbl";
 
-for (my$d=0; $d>=0; $d--) {
-  my($l_sec,$l_min,$l_hour,$l_day,$l_mon,$l_year,$l_wday,$l_yday,$l_isdst)
-    = gmtime(time);
-  my $time = timegm(0,0,$l_hour,$l_day,$l_mon,$l_year);
+my $start=$ARGV[0];
+my $end=$ARGV[1];
 
-  # 1日前
-  my $da=$d+1;
-  my $day1ago_time = $time - 3600*24*$da;
+if ( $#ARGV < 1 ) {
+  print STDERR "Usage : $myname$suffix <startdate> <enddate>\n";
+  exit 1;
+}
+
+
+#時刻をエポック秒に変換
+my $syear=substr($start,0,4);
+my $smon=substr($start,4,2);
+my $sday=substr($start,6,2);
+my $stime = timegm(0,0,0,$sday,$smon-1,$syear-1900);
+
+my $eyear=substr($end,0,4);
+my $emon=substr($end,4,2);
+my $eday=substr($end,6,2);
+my $etime = timegm(0,0,0,$eday,$emon-1,$eyear-1900);
+
+
+for (my$ntime=$stime; $ntime<=$etime; $ntime+=86400) {
   my($d1_sec,$d1_min,$d1_hour,$d1_day,$d1_mon,$d1_year,$d1_wday,$d1_yday,$d1_isdst)
-    = gmtime($day1ago_time);
-  my $year1d = sprintf("%04d",$d1_year+1900);
-  my $mon1d = sprintf("%02d",$d1_mon+1);
-  my $day1d = sprintf("%02d",$d1_day);
-  print "BASETIME:$year1d$mon1d$day1d\n";
+    = gmtime($ntime);
+  my $year = sprintf("%04d",$d1_year+1900);
+  my $mon = sprintf("%02d",$d1_mon+1);
+  my $day = sprintf("%02d",$d1_day);
+  print "BASETIME:$year$mon$day\n";
 
   my $TMPDIR = sprintf("$BASEDIR/data/tmp");
   my $DATADIR = sprintf("$BASEDIR/data");
@@ -32,7 +46,7 @@ for (my$d=0; $d>=0; $d--) {
   my $file;
   foreach my$i(keys %ids){
     my $id = $ids{$i};
-    my $obs_link = "http://stored1.wni.co.jp/amedas_tsuuho.1hour/nph-data.cgi?station=$id&period_s=$year1d/$mon1d/$day1d-00:00:00&period_e=$year1d/$mon1d/$day1d-23:00:00&element=Precipitation,Temperature";
+    my $obs_link = "http://stored1.wni.co.jp/amedas_tsuuho.1hour/nph-data.cgi?station=$id&period_s=$year/$mon/$day-00:00:00&period_e=$year/$mon/$day-23:00:00&element=Precipitation,Temperature";
 
     my $file = sprintf("$TMPDIR/%s",$id);
     my $status = getstore($obs_link, $file);
@@ -45,7 +59,7 @@ for (my$d=0; $d>=0; $d--) {
 
 
   # 処理しやすいように整形する
-  my $outfile =sprintf("$DATADIR/%04d%02d%02d.csv",$year1d, $mon1d, $day1d);
+  my $outfile =sprintf("$DATADIR/%04d%02d%02d.csv",$year, $mon, $day);
   print "$outfile\n";
   open($OUT,'>', $outfile);
 
